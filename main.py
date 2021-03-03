@@ -1,10 +1,14 @@
-import sys
+from socket import INADDR_LOOPBACK
+import sys, os, socketserver, threading
 from PyQt5.QtWidgets import QApplication, QDesktopWidget, QLabel, QMainWindow
 from PyQt5.QtGui import QImage, QPixmap
 
-import socketserver, threading
-
-IDX_IMAGE = 1
+PATTERNS_PATH = "patterns"
+display_monitor = 1  # the number of the monitor
+patterns = os.listdir(PATTERNS_PATH)
+app = QApplication(sys.argv)
+label = QLabel()
+IDX_IMAGE = 0
 
 
 class MyTCPHandler(socketserver.BaseRequestHandler):
@@ -16,11 +20,14 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
     client.
     """
     def handle(self):
+        global IDX_IMAGE
         # self.request is the TCP socket connected to the client
-        self.data = self.request.recv(1024).strip()
-        print("{} wrote:".format(self.client_address[0]))
-        IDX_IMAGE = (IDX_IMAGE + 1) % 4
-        print(self.data)
+        while True:
+            self.data = self.request.recv(1024).strip()
+            print(f"Loading pattern: {PATTERNS_PATH}/{patterns[IDX_IMAGE]}")
+            IDX_IMAGE = (IDX_IMAGE + 1) % len(patterns)
+            image = QImage(f"{PATTERNS_PATH}/{patterns[IDX_IMAGE]}")
+            label.setPixmap(QPixmap.fromImage(image))
 
 
 def network_thread():
@@ -35,22 +42,20 @@ def network_thread():
 
 
 def main():
-    app = QApplication(sys.argv)
-
     widget = QMainWindow()  # define your widget
-    label = QLabel()
 
-    image = QImage(f"patterns/pattern{IDX_IMAGE}.jpg")
+    image = QImage(f"{PATTERNS_PATH}/{patterns[0]}")
     label.setPixmap(QPixmap.fromImage(image))
-    
+
     widget.setCentralWidget(label)
-
-    display_monitor = 1  # the number of the monitor
-
     monitor = QDesktopWidget().screenGeometry(display_monitor)
     widget.move(monitor.left(), monitor.top())
     widget.showFullScreen()
 
-    # threading.Thread(target=network_thread).start()
+    threading.Thread(target=network_thread).start()
 
     app.exec_()
+
+
+if __name__ == "__main__":
+    main()
