@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "C:\\Users\\sunlo\\miniconda3\\python.exe"
+    "python.pythonPath": "C:\\Users\\sunlo\\miniconda3\\python.exe",
+    "python.formatting.provider": "autopep8"
 }
