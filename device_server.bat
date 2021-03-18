@@ -1,0 +1,1 @@
+python -m microscope.device_server config.py
