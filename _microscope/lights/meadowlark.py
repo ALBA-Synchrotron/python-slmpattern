@@ -143,3 +143,31 @@ class HDMIslm(microscope.abc.TriggerTargetMixin, microscope.abc.Device):
                 self.idx_image = i
                 self._update_pattern()
         raise RuntimeError(f"No sequence found for angle {theta}")
+
+
+def main():
+    hdmi = HDMIslm(display_monitor=2)
+
+    print(f"Trigger mode: {hdmi.trigger_mode}")
+    print(f"Trigger type: {hdmi.trigger_type}")
+
+    sequence = [
+        (10, 100, 1000),
+        (20, 200, 2000),
+        (30, 300, 3000)
+    ]
+
+    hdmi.set_sim_sequence(sequence)
+
+    print(f"Get current position: {hdmi.getCurrentPosition()}")
+
+    hdmi.cycleToPosition(1)
+    print(f"Get current position: {hdmi.getCurrentPosition()}")
+
+    print(f"Get SIM diffraction angle: {hdmi.get_sim_diffraction_angle()}")
+    hdmi.set_sim_diffraction_angle(30)
+    print(f"Get SIM diffraction angle: {hdmi.get_sim_diffraction_angle()}")
+
+
+if __name__ == "__main__":
+    main()
