@@ -27,6 +27,7 @@ import microscope
 import os
 import sys
 import threading
+import socket
 from shutil import copy
 from PyQt5.QtWidgets import QApplication, QDesktopWidget, QLabel, QMainWindow
 from PyQt5.QtGui import QImage, QPixmap
@@ -144,6 +145,74 @@ class HDMIslm(microscope.abc.TriggerTargetMixin, microscope.abc.Device):
                 self._update_pattern()
         raise RuntimeError(f"No sequence found for angle {theta}")
 
+
+class D5020(microscope.abc.TriggerTargetMixin, microscope.abc.Device):
+
+    _socket = None
+    _buff = bytearray(100)
+    # TODO: understand who is passing index on construction.
+
+    def __init__(self, host=None, port=None, index=0):
+        super().__init__()
+
+        self.host = host
+        self.port = port
+        # Initialize the hardware link
+        self.initialize()
+
+    def initialize(self):
+        """Initialise the rotator.
+
+        Open the connection and initialize main parameters.
+
+        """
+        try:
+            self._socket = socket.create_connection(("127.0.0.1", 4001))
+
+        except socket.error as msg:
+            _logger.error("ERROR: {}\n".format(msg))
+
+    def _do_shutdown(self) -> None:
+        if self._socket is not None:
+            self._socket.close()
+
+    @property
+    def trigger_mode(self) -> microscope.TriggerMode:
+        return microscope.TriggerMode.ONCE
+
+    @property
+    def trigger_type(self) -> microscope.TriggerType:
+        return microscope.TriggerType.SOFTWARE
+
+    def set_trigger(
+        self, ttype: microscope.TriggerType, tmode: microscope.TriggerMode
+    ) -> None:
+        if ttype is not microscope.TriggerType.SOFTWARE:
+            raise microscope.UnsupportedFeatureError(
+                "the only trigger type supported is software"
+            )
+        if tmode is not microscope.TriggerMode.ONCE:
+            raise microscope.UnsupportedFeatureError(
+                "the only trigger mode supported is 'once'"
+            )
+
+    def _do_trigger(self) -> None:
+        """Actual trigger of the device.
+
+        Classes implementing this interface should implement this
+        method instead of `trigger`.
+
+        """
+        raise NotImplementedError()
+
+    def _vcheck(self, v):  # voltage check
+        return max(0, min(v, 10000))
+
+    def set_voltage(self, channel: int, voltage: int):
+        voltage = self.vcheck(voltage)
+        self._socket.sendall(f"inv:{channel},{voltage}".encode('ascii'))
+        readed = self._socket.recv_into(self._buff)
+        print(f"{readed} - {self._buff},")
 
 def main():
     hdmi = HDMIslm(display_monitor=2)
