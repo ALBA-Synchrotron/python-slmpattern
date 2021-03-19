@@ -37,7 +37,7 @@ _logger = logging.getLogger(__name__)
 class HDMIslm(microscope.abc.TriggerTargetMixin, microscope.abc.Device):
 
     # TODO: understand who is passing index on construction.
-    # host=None, port=None, index=0
+    # host=None, port=None, index=0 
     def __init__(self, display_monitor=1, index=0):
         super().__init__()
 
@@ -46,17 +46,17 @@ class HDMIslm(microscope.abc.TriggerTargetMixin, microscope.abc.Device):
         self.display_monitor = display_monitor  # the number of the monitor
         self.patterns = dict(enumerate(os.listdir(self.patterns_path)))
         self.sequence = {}
-        self.app = QApplication(sys.argv)
-        self.label = QLabel()
         self.idx_image = 0
 
-        # Initialize the hardware link
         self.initialize()
 
-    def initialize(self):
+    def _run_qt(self):
         """Initialise the slm.
             Open the connection and initialize main parameters.
         """
+        self.app = QApplication(sys.argv)
+        self.label = QLabel()
+        
         widget = QMainWindow()  # define your widget
 
         image = QImage(f"{self.patterns_path}/{self.patterns[0]}")
@@ -68,7 +68,10 @@ class HDMIslm(microscope.abc.TriggerTargetMixin, microscope.abc.Device):
         widget.showFullScreen()
 
         # TODO: Test if thread is necessary and works.
-        threading.Thread(target=self.app.exec_()).start()
+        self.app.exec_()
+
+    def initialize(self):
+        threading.Thread(target=self._run_qt).start()
 
     def _do_shutdown(self) -> None:
         self.app.quit()
@@ -143,6 +146,8 @@ class HDMIslm(microscope.abc.TriggerTargetMixin, microscope.abc.Device):
                 self.idx_image = i
                 self._update_pattern()
         raise RuntimeError(f"No sequence found for angle {theta}")
+
+
 
 
 def main():
